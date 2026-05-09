@@ -4,7 +4,6 @@ dotenv.config();
 
 import { connectDB } from "./config/db.js";
 import { validateEnv } from "./config/env.js";
-import { verifySmtpTransport } from "./utils/mailer.js";
 
 const PORT = process.env.PORT || 5000;
 let server;
@@ -21,13 +20,6 @@ const start = async () => {
   try {
     validateEnv();
     await connectDB();
-
-    const smtpOk = await verifySmtpTransport();
-    if (smtpOk) {
-      console.log("SMTP transporter verified");
-    } else {
-      console.warn("SMTP transporter unavailable; OTP email endpoints will return API errors until SMTP works.");
-    }
 
     const { default: app } = await import("./app.js");
 
