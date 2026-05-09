@@ -28,18 +28,24 @@ const getSmtpConfig = async () => {
 };
 
 export const verifySmtpTransport = async () => {
-  const config = await getSmtpConfig();
-  const transporter = nodemailer.createTransport(config);
-  await transporter.verify();
-  return true;
+  try {
+    const config = await getSmtpConfig();
+    const transporter = nodemailer.createTransport(config);
+    await transporter.verify();
+    return true;
+  } catch (error) {
+    console.error("SMTP verify error:", error.message);
+    return false;
+  }
 };
 
 export const sendVerificationEmail = async ({ to, otpCode }) => {
-  const config = await getSmtpConfig();
-  const transporter = nodemailer.createTransport(config);
-  const from = (process.env.SMTP_FROM || process.env.SMTP_USER || "").trim();
+  try {
+    const config = await getSmtpConfig();
+    const transporter = nodemailer.createTransport(config);
+    const from = (process.env.SMTP_FROM || process.env.SMTP_USER || "").trim();
 
-  const html = `
+    const html = `
   <div style="font-family:Inter,Arial,sans-serif;background:#0b1020;padding:28px;color:#e2e8f0;">
     <div style="max-width:560px;margin:0 auto;border:1px solid #243047;background:rgba(15,23,42,0.92);border-radius:14px;padding:28px;">
       <h1 style="margin:0 0 8px;font-size:24px;color:#a5b4fc;">TeamFlow</h1>
@@ -53,10 +59,17 @@ export const sendVerificationEmail = async ({ to, otpCode }) => {
     </div>
   </div>`;
 
-  await transporter.sendMail({
-    from,
-    to,
-    subject: "Verify Your TeamFlow Account",
-    html
-  });
+    await transporter.sendMail({
+      from,
+      to,
+      subject: "Verify Your TeamFlow Account",
+      html
+    });
+    return true;
+  } catch (error) {
+    console.error("SMTP send error:", error.message);
+    const err = new Error("Unable to send OTP email right now. Please try again.");
+    err.statusCode = 502;
+    throw err;
+  }
 };

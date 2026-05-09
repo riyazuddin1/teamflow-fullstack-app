@@ -7,28 +7,38 @@ import { validateEnv } from "./config/env.js";
 import { verifySmtpTransport } from "./utils/mailer.js";
 
 const PORT = process.env.PORT || 5000;
+let server;
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
 
 const start = async () => {
   try {
     validateEnv();
     await connectDB();
 
-    try {
-      await verifySmtpTransport();
+    const smtpOk = await verifySmtpTransport();
+    if (smtpOk) {
       console.log("SMTP transporter verified");
-    } catch (smtpError) {
-      console.error("SMTP verification failed:", smtpError.message);
-      process.exit(1);
+    } else {
+      console.warn("SMTP transporter unavailable; OTP email endpoints will return API errors until SMTP works.");
     }
 
     const { default: app } = await import("./app.js");
 
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+    });
+    server.on("error", (error) => {
+      console.error("HTTP server error:", error.message);
     });
   } catch (error) {
     console.error("Failed to start server", error.message);
-    process.exit(1);
   }
 };
 

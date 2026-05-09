@@ -27,7 +27,11 @@ const setOtpOnUser = async (user) => {
   user.otpCode = otpCode;
   user.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
   await user.save();
-  await sendVerificationEmail({ to: user.email, otpCode });
+  try {
+    await sendVerificationEmail({ to: user.email, otpCode });
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const signup = asyncHandler(async (req, res) => {
