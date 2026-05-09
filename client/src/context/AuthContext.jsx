@@ -35,18 +35,10 @@ export function AuthProvider({ children }) {
 
   const signup = async (payload) => {
     const res = await api.post("/auth/signup", payload);
-    return res.data;
-  };
-
-  const verifyOtp = async (payload) => {
-    const res = await api.post("/auth/verify-otp", payload);
-    localStorage.setItem("teamflow_token", res.data.token);
-    setUser(res.data.user);
-    return res.data;
-  };
-
-  const resendOtp = async (email) => {
-    const res = await api.post("/auth/resend-otp", { email });
+    if (res.data?.token) {
+      localStorage.setItem("teamflow_token", res.data.token);
+      setUser(res.data.user);
+    }
     return res.data;
   };
 
@@ -56,7 +48,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ user, loading, isAuthenticated: !!user, login, signup, verifyOtp, resendOtp, logout }),
+    () => ({ user, loading, isAuthenticated: !!user, login, signup, logout }),
     [user, loading]
   );
 

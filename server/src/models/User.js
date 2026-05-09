@@ -11,12 +11,11 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     jobTitle: { type: String, default: "" },
     department: { type: String, default: "" },
-    bio: { type: String, default: "" },
-    isVerified: { type: Boolean, default: false },
-    otpCode: { type: String, default: null, select: false },
-    otpExpiresAt: { type: Date, default: null, select: false }
+    bio: { type: String, default: "" }
   },
-  { timestamps: { createdAt: true, updatedAt: true } }
+  {
+    timestamps: { createdAt: true, updatedAt: true }
+  }
 );
 
 userSchema.pre("save", async function (next) {
@@ -25,8 +24,8 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = function (candidate) {
+  return bcrypt.compare(candidate, this.password);
 };
 
 const User = mongoose.model("User", userSchema);

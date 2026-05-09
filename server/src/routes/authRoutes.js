@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { login, me, resendOtp, signup, verifyOtp } from "../controllers/authController.js";
+import { login, me, signup } from "../controllers/authController.js";
 import { protect } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 
@@ -26,22 +26,6 @@ router.post(
     validate
   ],
   login
-);
-
-router.post(
-  "/verify-otp",
-  [
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("otp").isLength({ min: 6, max: 6 }).withMessage("Valid 6-digit OTP is required"),
-    validate
-  ],
-  verifyOtp
-);
-
-router.post(
-  "/resend-otp",
-  [body("email").isEmail().withMessage("Valid email is required"), validate],
-  resendOtp
 );
 
 router.get("/me", protect, me);
