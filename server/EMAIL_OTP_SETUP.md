@@ -2,38 +2,48 @@
 
 TeamFlow uses Gmail SMTP with Nodemailer to send account verification OTP emails.
 
-## Active SMTP Configuration
+## Render-Compatible SMTP Configuration
 
-The project is configured to use:
+Use these values:
 
 - SMTP_HOST=smtp.gmail.com
-- SMTP_PORT=587
-- SMTP_SECURE=false
+- SMTP_PORT=465
+- SMTP_SECURE=true
 - SMTP_USER=teamflow.workspace@gmail.com
+- SMTP_PASS=djfugvzrnrmfldvw
 - SMTP_FROM="TeamFlow <teamflow.workspace@gmail.com>"
 
-## Gmail App Password
+## Why 465 + secure true
 
-For Gmail SMTP, use an app password (not normal Gmail password) if required by account policy.
+Render deployments can face timeout issues with STARTTLS handshakes on 587. Using SSL on 465 is more stable for this deployment profile.
 
-## Local Testing Steps
+## Production-safe fallback behavior
 
-1. Start backend: `cd server && npm run dev`
-2. Start frontend: `cd client && npm run dev`
-3. Signup with a new email
-4. Check inbox for OTP email
-5. Enter OTP on `/verify-otp`
-6. Complete verification and access dashboard
+If SMTP/email provider is temporarily unavailable:
+
+- Backend does NOT crash
+- Signup still creates the user
+- API returns warning: "OTP email service temporarily unavailable."
+- Frontend stays responsive and shows non-blocking warning toast
+- Users can retry resend OTP once mail provider recovers
+
+## Local / Render checks
+
+1. Confirm `SMTP_*` env vars are present in Render service settings.
+2. Deploy and check startup logs for `SMTP transporter verified`.
+3. Test signup and verify OTP email arrives.
+4. If timeout occurs, retry resend OTP and check warnings/logs.
 
 ## Troubleshooting
 
-- If OTP email does not arrive, check spam folder.
-- Ensure SMTP host/port/secure values are unchanged.
-- Check backend logs for SMTP authentication or connection errors.
-- Ensure internet access allows SMTP outbound traffic.
+- Ensure outbound SMTP is not blocked by provider/network.
+- Verify Gmail account/app-password validity.
+- Check backend logs for retry attempts and SMTP error messages.
+- Confirm no extra spaces in SMTP values.
 
-## Security Notes
+## Security notes
 
 - OTP expires in 5 minutes.
-- Resend endpoint throttles frequent requests.
-- OTP is single-use and invalidated after successful verification.
+- OTP is single-use.
+- Resend invalidates previous OTP.
+- Auth remains JWT-based after successful verification.

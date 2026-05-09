@@ -34,6 +34,9 @@ export default function LoginPage() {
       const data = await login(values);
       if (data.requiresVerification) {
         toast.info("Please verify OTP sent to your email");
+        if (data.warning) {
+          toast.warning(data.warning);
+        }
         navigate("/verify-otp", { state: { email: data.email } });
         return;
       }
@@ -41,6 +44,9 @@ export default function LoginPage() {
       navigate("/dashboard");
     } catch (error) {
       if (error?.response?.data?.requiresVerification) {
+        if (error.response.data.warning) {
+          toast.warning(error.response.data.warning);
+        }
         navigate("/verify-otp", { state: { email: error.response.data.email || values.email } });
         return;
       }

@@ -12,8 +12,8 @@ const getSmtpConfig = async () => {
 
   return {
     host: resolved.address,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: toBool(process.env.SMTP_SECURE, false),
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: toBool(process.env.SMTP_SECURE, true),
     auth: {
       user: (process.env.SMTP_USER || "").trim(),
       pass: (process.env.SMTP_PASS || "").trim()
@@ -32,11 +32,31 @@ export const verifySmtpTransport = async () => {
     const config = await getSmtpConfig();
     const transporter = nodemailer.createTransport(config);
     await transporter.verify();
+    console.log("SMTP verify success:", `${config.host}:${config.port}`, `secure=${config.secure}`);
     return true;
   } catch (error) {
     console.error("SMTP verify error:", error.message);
     return false;
   }
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const sendWithRetry = async (transporter, mailOptions, maxAttempts = 3) => {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      lastError = error;
+      console.error(`SMTP send attempt ${attempt}/${maxAttempts} failed:`, error.message);
+      if (attempt < maxAttempts) {
+        await sleep(attempt * 1000);
+      }
+    }
+  }
+  throw lastError;
 };
 
 export const sendVerificationEmail = async ({ to, otpCode }) => {
@@ -59,7 +79,7 @@ export const sendVerificationEmail = async ({ to, otpCode }) => {
     </div>
   </div>`;
 
-    await transporter.sendMail({
+    await sendWithRetry(transporter, {
       from,
       to,
       subject: "Verify Your TeamFlow Account",

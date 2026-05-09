@@ -38,6 +38,9 @@ export default function SignupPage() {
     try {
       const data = await signup(values);
       toast.success(data.message || "Signup successful. Verify OTP.");
+      if (data.warning) {
+        toast.warning(data.warning);
+      }
       navigate("/verify-otp", { state: { email: data.email || values.email } });
     } catch (error) {
       toast.error(error?.response?.data?.message || "Signup failed");

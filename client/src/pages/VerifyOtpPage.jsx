@@ -56,7 +56,11 @@ export default function VerifyOtpPage() {
       toast.success(data.message || "OTP resent");
       setCountdown(30);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to resend OTP");
+      const msg = error?.response?.data?.message || "Failed to resend OTP";
+      toast.error(msg);
+      if (msg.toLowerCase().includes("temporarily unavailable")) {
+        toast.warning("You can retry in a moment. Service remains online.");
+      }
     } finally {
       setIsResending(false);
     }

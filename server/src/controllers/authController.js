@@ -27,11 +27,17 @@ const setOtpOnUser = async (user) => {
   user.otpCode = otpCode;
   user.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
   await user.save();
+
+  let sent = true;
+  let warning = "";
   try {
     await sendVerificationEmail({ to: user.email, otpCode });
   } catch (error) {
-    throw error;
+    sent = false;
+    warning = "OTP email service temporarily unavailable.";
+    console.error("OTP delivery failed:", error.message);
   }
+  return { sent, warning };
 };
 
 export const signup = asyncHandler(async (req, res) => {
@@ -68,12 +74,15 @@ export const signup = asyncHandler(async (req, res) => {
     await user.save();
   }
 
-  await setOtpOnUser(user);
+  const delivery = await setOtpOnUser(user);
 
   return res.status(201).json({
-    message: "Account created. Verify OTP sent to your email.",
+    message: delivery.sent
+      ? "Account created. Verify OTP sent to your email."
+      : "Account created. OTP email service temporarily unavailable.",
     requiresVerification: true,
-    email: user.email
+    email: user.email,
+    ...(delivery.warning && { warning: delivery.warning })
   });
 });
 
@@ -120,7 +129,10 @@ export const resendOtp = asyncHandler(async (req, res) => {
     return res.status(429).json({ message: "Please wait a few seconds before requesting another OTP" });
   }
 
-  await setOtpOnUser(user);
+  const delivery = await setOtpOnUser(user);
+  if (!delivery.sent) {
+    return res.status(503).json({ message: "OTP email service temporarily unavailable." });
+  }
   return res.json({ message: "A new OTP has been sent to your email" });
 });
 
@@ -134,14 +146,17 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   if (!user.isVerified) {
+    let warning = "";
     if (!user.otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
-      await setOtpOnUser(user);
+      const delivery = await setOtpOnUser(user);
+      warning = delivery.warning || "";
     }
 
     return res.status(403).json({
-      message: "Account not verified. Please verify OTP.",
+      message: warning || "Account not verified. Please verify OTP.",
       requiresVerification: true,
-      email: user.email
+      email: user.email,
+      ...(warning && { warning })
     });
   }
 
